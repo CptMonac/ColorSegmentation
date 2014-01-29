@@ -9,10 +9,12 @@
  */
 
 import SimpleOpenNI.*;
-
+import processing.video.*;
 
 SimpleOpenNI  context;
 PImage webcamImage;
+boolean webcamEnabled;
+Capture cam;
 int[] midPoint;
 int regionSize;
 int imageWidth, imageHeight;
@@ -24,29 +26,50 @@ void setup()
   imageWidth  = 640;
   imageHeight = 480;
   
+  String[] cameras = Capture.list();
   midPoint = new int[2];
   size(imageWidth+100, imageHeight);
-  context = new SimpleOpenNI(this);
   
-  if (context.isInit() == false)
+  if (cameras.length == 0)                //Try kinect camera if no webcams found
   {
-    println("Can't init SimpleOpenNI, maybe the camera is not connected!"); 
-    exit();
-    return;
+    context = new SimpleOpenNI(this);
+    
+    if (context.isInit() == false)
+    {
+      println("Can't init SimpleOpenNI, maybe the camera is not connected!"); 
+      exit();
+      return;
+    }
+    webcamEnabled = false;
+    context.setMirror(true);
+    context.enableRGB();
   }
-
-  context.setMirror(true);
-  context.enableRGB();
+  else                                   //Select first available webcamera
+  {
+    cam = new Capture(this, cameras[0]);
+    cam.start();
+    webcamEnabled = true;
+  }
   midPoint[0] = imageWidth/2;
   midPoint[1] = imageHeight/2;
 }
 
 void draw()
 {
-  context.update();                  //Update the cam
-  webcamImage = context.rgbImage();
-  image(webcamImage, 0, 0);         //Draw camera feed
-  webcamImage.loadPixels();
+  if(!webcamEnabled)
+  {
+    context.update();                  //Update the cam
+    webcamImage = context.rgbImage();
+    image(webcamImage, 0, 0);         //Draw camera feed
+    webcamImage.loadPixels();
+  }
+  else if (cam.available()) 
+  {
+    cam.read();
+    webcamImage = cam.get();
+    image(cam, 0, 0);
+    webcamImage.loadPixels();
+  }
   noFill();
   ellipse(midPoint[0], midPoint[1], regionSize, regionSize);
 
