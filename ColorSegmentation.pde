@@ -17,66 +17,36 @@ boolean webcamEnabled;
 Capture cam;
 int[] midPoint;
 int regionSize;
-int imageWidth, imageHeight;
 
 void setup()
 {
   //Intialize variables
   regionSize  = 300;
-  imageWidth  = 640;
-  imageHeight = 480;
-  
-  String[] cameras = Capture.list();
+   
+  cam = new Capture(this);
+  cam.start();
   midPoint = new int[2];
-  size(imageWidth+100, imageHeight);
+  size(640, 480);
   
-  if (cameras.length == 0)                //Try kinect camera if no webcams found
-  {
-    context = new SimpleOpenNI(this);
-    
-    if (context.isInit() == false)
-    {
-      println("Can't init SimpleOpenNI, maybe the camera is not connected!"); 
-      exit();
-      return;
-    }
-    webcamEnabled = false;
-    context.setMirror(true);
-    context.enableRGB();
-  }
-  else                                   //Select first available webcamera
-  {
-    cam = new Capture(this, cameras[0]);
-    cam.start();
-    webcamEnabled = true;
-  }
-  midPoint[0] = imageWidth/2;
-  midPoint[1] = imageHeight/2;
+  midPoint[0] =  width/2;
+  midPoint[1] = height/2;
 }
 
 void draw()
 {
-  if(!webcamEnabled)
-  {
-    context.update();                  //Update the cam
-    webcamImage = context.rgbImage();
-    image(webcamImage, 0, 0);         //Draw camera feed
-    webcamImage.loadPixels();
-  }
-  else if (cam.available()) 
-  {
+  if (cam.available())
     cam.read();
-    webcamImage = cam.get();
-    image(cam, 0, 0);
-    webcamImage.loadPixels();
-  }
+  
+  webcamImage = cam.get();
+  image(webcamImage, 0, 0);
+  
   noFill();
   ellipse(midPoint[0], midPoint[1], regionSize, regionSize);
 
   //color userColor = averageColor(webcamImage);
-  color userColor = representativeColor(webcamImage);
-  fill(userColor);
-  rect(webcamImage.width, 0, 100, 480);
+  //color userColor = representativeColor(webcamImage);
+  //fill(userColor);
+  //rect(webcamImage.width-100, 0, 100, 480);
 }
 
 color averageColor(PImage inputImage)
@@ -100,21 +70,22 @@ color averageColor(PImage inputImage)
   OriginIndex = (OriginY * width) + OriginX;
 
 
-  for(int i = 0; i < regionSize*2; i++)
+  for(int i = 0; i < regionSize*regionSize; i++)
   {
     averageRed+= red(inputImage.pixels[i+OriginIndex]);
     averageGreen+= green(inputImage.pixels[i+OriginIndex]);
     averageBlue+= blue(inputImage.pixels[i+OriginIndex]);
   }
-  averageRed = averageRed/(regionSize*2);
-  averageBlue = averageBlue/(regionSize*2);
-  averageGreen = averageGreen/(regionSize*2);
+  averageRed = averageRed/(regionSize*regionSize);
+  averageBlue = averageBlue/(regionSize*regionSize);
+  averageGreen = averageGreen/(regionSize*regionSize);
   return color(averageRed, averageGreen, averageBlue);
 }
 
 color representativeColor(PImage inputImage)
 {
-  int midPointIndex = (midPoint[1] * imageWidth) + midPoint[0];
+  inputImage.loadPixels();
+  int midPointIndex = (midPoint[1] * 480) + 680;
   return color(inputImage.pixels[midPointIndex]);
 }
 
